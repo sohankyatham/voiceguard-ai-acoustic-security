@@ -28,7 +28,7 @@ print("Generating synthetic audio via OpenAI TTS API...")
 # OpenAI API call
 response = client.audio.speech.create(
     model="tts-1-hd",
-    voice="sage",    # Choices: alloy, nova, echo, fable, onyx, shimmer
+    voice="alloy",    
     input=clean_text,
     response_format="wav"
 )
