@@ -4,9 +4,9 @@
 venv/
 .venv/
 
-# Audio Data Directories
-raw_data/*.wav
-processed_chunks/
+# Ignore heavy raw & processed audio files
+data/raw/*.wav
+data/processed/**/*.wav
 
 # Python Cache and Trained Models
 __pycache__/
