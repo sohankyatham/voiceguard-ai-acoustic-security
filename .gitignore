@@ -1,1 +1,13 @@
 .env
+
+# Virtual Environment
+venv/
+.venv/
+
+# Audio Data Directories
+raw_data/*.wav
+processed_chunks/
+
+# Python Cache and Trained Models
+__pycache__/
+*.pkl
