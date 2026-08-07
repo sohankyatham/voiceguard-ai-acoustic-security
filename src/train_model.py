@@ -1,6 +1,7 @@
 from pathlib import Path
 import librosa
 import numpy as np
+import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -81,7 +82,10 @@ def train():
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred, target_names=["Human (0)", "AI (1)"]))
 
-
+    # Save the model artifact
+    model_save_path = models_dir / "voiceguard_svm.pkl"
+    joblib.dump({"model": model, "scaler": scaler}, model_save_path)
+    print(f"\nTrained model successfully saved to: {model_save_path}")
 
 
 if __name__ == "__main__":
