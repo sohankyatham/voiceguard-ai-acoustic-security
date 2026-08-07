@@ -1,6 +1,11 @@
 from pathlib import Path
 import librosa
 import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.metrics import accuracy_score, classification_report
 
 # Directory setup relative to script location
 project_root = Path(__file__).resolve().parents[1]
@@ -21,6 +26,10 @@ def extract_mfcc_features(file_path):
 
 def train():
     """Train the SVM model"""
+
+    print(f"Checking for human files in: {human_dir.resolve()}")
+    print(f"Checking for AI files in: {ai_dir.resolve()}")
+
     print("Extracting MFCC features from processed audio chunks...")
 
     X = []
@@ -33,7 +42,45 @@ def train():
        y.append(0)
 
     print(f"Loaded {len(human_files)} human audio samples.")
-    print(X)
+
+    # Process the AI Audio Chunks (label: 1)
+    ai_files = list(ai_dir.glob("*.wav"))
+    for f in ai_files:
+       X.append(extract_mfcc_features(f))
+       y.append(1)
+
+    print(f"Loaded {len(ai_files)} AI audio samples.")
+
+    X = np.array(X)
+    y = np.array(y)
+
+    # Stratified split maintains ratio across train and test sets
+    X_train, X_test, y_train, y_test, = train_test_split(
+       X, y, test_size=0.2, random_state=42, stratify=y
+    )
+    
+    print(f"\n Training SVM Model on {len(X_train)} samples...")
+
+    # Feature Scaling
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    # Train SVM with Probability Calibration
+    base_svm = SVC(kernel="rbf", C=1.0, random_state=42)
+    model = CalibratedClassifierCV(estimator=base_svm, ensemble=False)
+    model.fit(X_train_scaled, y_train)
+
+    # Evaluation
+    y_pred = model.predict(X_test_scaled)
+    acc = accuracy_score(y_test, y_pred)
+
+    print("\n" + "=" * 40)
+    print(f"MODEL ACCURACY: {acc * 100:.2f}%")
+    print("=" * 40)
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred, target_names=["Human (0)", "AI (1)"]))
+
 
 
 
