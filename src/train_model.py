@@ -21,7 +21,21 @@ def extract_mfcc_features(file_path):
 
 def train():
     """Train the SVM model"""
-    pass
+    print("Extracting MFCC features from processed audio chunks...")
+
+    X = []
+    y = []
+
+    # Process the Human Audio Chunks (label: 0)
+    human_files = list(human_dir.glob("*.wav"))
+    for f in human_files:
+       X.append(extract_mfcc_features(f))
+       y.append(0)
+
+    print(f"Loaded {len(human_files)} human audio samples.")
+    print(X)
+
+
 
 if __name__ == "__main__":
   train()
