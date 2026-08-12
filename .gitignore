@@ -11,3 +11,4 @@ data/processed/**/*.wav
 # Python Cache and Trained Models
 __pycache__/
 *.pkl
+models/
