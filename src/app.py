@@ -36,3 +36,19 @@ with col_upload:
 
 with col_record:
     recorded_audio = st.audio_input("Or record live with microphone")
+
+# Determine active audio source
+audio_to_process = None
+source_name = ""
+
+if audio_file is not None:
+  audio_to_process = audio_file
+  source_name = audio_file.name
+elif recorded_audio is not None:
+  audio_to_process = recorded_audio
+  source_name = "Live Microphone Recording"
+
+# Display intercepted audio player
+if audio_to_process is not None:
+  st.success(f"Intercepted Audio Payload Ready: **{source_name}**")
+  st.audio(audio_to_process)
