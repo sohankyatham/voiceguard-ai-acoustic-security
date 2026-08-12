@@ -1,4 +1,6 @@
 import streamlit as st
+from pathlib import Path
+from dotenv import load_dotenv
 
 # Streamlit page configuration
 st.set_page_config(
@@ -6,6 +8,24 @@ st.set_page_config(
     page_icon="",
     layout="wide",
 )
+
+# Environment & path setup 
+project_root = Path(__file__).resolve().parents[1]
+load_dotenv(project_root / ".env")
+
+model_path = project_root / "models" / "voiceguard_svm.pkl"
+
+
+# Load trained ML model (cached)
+@st.cache_resource
+def load_acoustic_model():
+   pass
+
+# Real ML inference functions
+def run_real_acoustic_inference():
+   pass
+
+
 
 # User Interface
 st.title("VoiceGuard - AI Acoustic Security")
@@ -52,3 +72,13 @@ elif recorded_audio is not None:
 if audio_to_process is not None:
   st.success(f"Intercepted Audio Payload Ready: **{source_name}**")
   st.audio(audio_to_process)
+
+  with st.status("Analyzing acoustic payload...", expanded=True) as status:
+    st.write(f"📥 Intercepted source: **{source_name}**")
+
+    try:
+      st.write("⚙️ Extracting MFCCs and spectral structures...")
+
+    except Exception as e:
+      st.error(f"Error processing audio payload: {e}")
+      status.update(label="Analysis Failed", state="error")
