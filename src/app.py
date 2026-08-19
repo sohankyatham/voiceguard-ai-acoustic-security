@@ -14,7 +14,7 @@ from openai import OpenAI
 # Streamlit page configuration
 st.set_page_config(
     page_title="VoiceGuard - AI Acoustic Security",
-    page_icon="",
+    page_icon="🛡️",
     layout="wide",
 )
 
@@ -105,7 +105,7 @@ def run_real_semantic_analysis(audio_bytes):
 
 
 # User Interface
-st.title("VoiceGuard - AI Acoustic Security")
+st.title("🛡️ VoiceGuard - AI Acoustic Security")
 st.markdown("""**Acoustic Anomaly Detection**
 This tool intercepts voice traffic and performs MFCC analysis to detect biometric spoofing, voice cloning, and synthetic audio generation.
 """)
@@ -148,14 +148,14 @@ elif recorded_audio is not None:
 # Processing Engine
 if audio_to_process is not None:
     audio_bytes = audio_to_process.read()
-    st.success(f"Intercepted Audio Payload Ready: **{source_name}**")
+    st.success(f"📥 Intercepted Audio Payload Ready: **{source_name}**")
     st.audio(audio_bytes)
 
     with st.status("Analyzing acoustic payload...", expanded=True) as status:
-        st.write(f"Intercepted source: **{source_name}**")
+        st.write(f"📥 Intercepted source: **{source_name}**")
 
         try:
-            st.write("Extracting MFCCs and spectral structures...")
+            st.write("⚙️ Extracting MFCCs and spectral structures...")
 
             # Load raw audio bytes into numpy array
             y, sr = sf.read(io.BytesIO(audio_bytes))
@@ -198,11 +198,11 @@ if audio_to_process is not None:
             st.pyplot(fig)
 
             # Run real SVM model inference
-            st.write("Running Support Vector Machine acoustic classification...")
+            st.write("🧠 Running Support Vector Machine acoustic classification...")
             is_ai_prediction, spoof_probability = run_real_acoustic_inference(y, sr)
 
             # 2. Run OpenAI Whisper + GPT-4o-mini Semantic Analysis
-            st.write("Transcribing and analyzing intent with OpenAI...")
+            st.write("🗣️ Transcribing and analyzing intent with OpenAI...")
             real_transcript, semantic_data = run_real_semantic_analysis(audio_bytes)
     
             status.update(
@@ -216,7 +216,7 @@ if audio_to_process is not None:
 
             if is_ai_prediction == 1:
                 st.error(
-                    f"[CRITICAL: SYNTHETIC AUDIO DETECTED - {spoof_probability * 100:.1f}% BIOMETRIC SPOOFING RISK]"
+                    f"🛑 [CRITICAL: SYNTHETIC AUDIO DETECTED - {spoof_probability * 100:.1f}% BIOMETRIC SPOOFING RISK]"
                 )
                 st.warning(
                     "Action Taken: Audio Pipeline Hard-Disconnected at Layer 1"
@@ -224,7 +224,7 @@ if audio_to_process is not None:
                 )
             else:
                 st.success(
-                    "Real Human Voice Signature Verified. Confidence:"
+                    "✅ Real Human Voice Signature Verified. Confidence:"
                     f" {(1.0 - spoof_probability) * 100:.1f}%"
                 )
 
@@ -244,11 +244,11 @@ if audio_to_process is not None:
 
             if is_malicious_intent or found_keywords:
                 st.warning(
-                    "High-Risk Intent / Prompt Injection Detected:"
+                    "⚠️ High-Risk Intent / Prompt Injection Detected:"
                     f" {', '.join(found_keywords) if found_keywords else 'Social Engineering Indicator'}"
                 )
             else:
-                st.info("Semantic Intent: Safe (Standard Inquiry)")
+                st.info("✅ Semantic Intent: Safe (Standard Inquiry)")
 
         except Exception as e:
             st.error(f"Error processing audio payload: {e}")
