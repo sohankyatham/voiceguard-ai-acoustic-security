@@ -1,6 +1,8 @@
+import io
 import streamlit as st
 from pathlib import Path
 from dotenv import load_dotenv
+import joblib
 
 # Streamlit page configuration
 st.set_page_config(
@@ -16,10 +18,16 @@ load_dotenv(project_root / ".env")
 model_path = project_root / "models" / "voiceguard_svm.pkl"
 
 
-# Load trained ML model (cached)
+# Load trained ML model (cached in memory)
 @st.cache_resource
 def load_acoustic_model():
-   pass
+    if not model_path.exists():
+        st.error(
+            f"Model file not found at {model_path}. Please run src/train_model.py first"
+        )
+        st.stop()
+    artifact = joblib.load(model_path)
+    return artifact["model"], artifact["scaler"]
 
 # Real ML inference functions
 def run_real_acoustic_inference():
