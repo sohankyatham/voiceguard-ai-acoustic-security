@@ -4,7 +4,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 import joblib
 import librosa
+import librosa.display
 import numpy as np
+import matplotlib.pyplot as plt
 import soundfile as sf
 
 # Streamlit page configuration
@@ -121,6 +123,34 @@ if audio_to_process is not None:
       max_duration = 5
       if len(y) > sr * max_duration:
         y = y[: sr * max_duration]
+
+      # Generate Mel-Spectrogram Visualization
+      fig, ax = plt.subplots(figsize=(10, 3.5))
+      S = librosa.feature.melspectrogram(
+          y=y, sr=sr, n_mels=64, hop_length=512, fmax=8000
+      )
+      S_dB = librosa.power_to_db(S, ref=np.max)
+
+      plt.style.use("dark_background")
+      fig.patch.set_facecolor("#0e1117")
+      ax.set_facecolor("#0e1117")
+
+      img = librosa.display.specshow(
+          S_dB,
+          x_axis="time",
+          y_axis="mel",
+          sr=sr,
+          fmax=8000,
+          ax=ax,
+          cmap="magma",
+      )
+      fig.colorbar(img, ax=ax, format="%+2.0f dB")
+      ax.set_title(
+          "Mel-frequency Spectrogram Analysis", color="#00ff00", fontsize=10
+      )
+      ax.tick_params(colors="white")
+
+      st.pyplot(fig)
 
       # Run real SVM model inference
       st.write("Running Support Vector Machine acoustic classification...")
