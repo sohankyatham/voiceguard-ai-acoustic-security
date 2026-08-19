@@ -98,16 +98,56 @@ elif recorded_audio is not None:
   audio_to_process = recorded_audio
   source_name = "Live Microphone Recording"
 
-# Display intercepted audio player
+# Processing Engine
 if audio_to_process is not None:
+  audio_bytes = audio_to_process.read()
   st.success(f"Intercepted Audio Payload Ready: **{source_name}**")
-  st.audio(audio_to_process)
+  st.audio(audio_bytes)
 
   with st.status("Analyzing acoustic payload...", expanded=True) as status:
-    st.write(f"📥 Intercepted source: **{source_name}**")
+    st.write(f"Intercepted source: **{source_name}**")
 
     try:
-      st.write("⚙️ Extracting MFCCs and spectral structures...")
+      st.write("Extracting MFCCs and spectral structures...")
+
+      # Load raw audio bytes into numpy array
+      y, sr = sf.read(io.BytesIO(audio_bytes))
+
+      # Convert stereo to mono if audio has 2 channels
+      if len(y.shape) > 1:
+        y = np.mean(y, axis=1)
+
+      # Truncate audio to max 5 seconds for sub-second processing speed
+      max_duration = 5
+      if len(y) > sr * max_duration:
+        y = y[: sr * max_duration]
+
+      # Run real SVM model inference
+      st.write("Running Support Vector Machine acoustic classification...")
+      is_ai_prediction, spoof_probability = run_real_acoustic_inference(y, sr)
+
+      status.update(
+          label="Acoustic Analysis Complete", state="complete", expanded=False
+      )
+
+      st.divider()
+
+      # Display Acoustic Telemetry Results
+      st.subheader("Stage 1: Biometric Acoustic Telemetry Results")
+
+      if is_ai_prediction == 1:
+        st.error(
+            f"[CRITICAL: SYNTHETIC AUDIO DETECTED - {spoof_probability * 100:.1f}% BIOMETRIC SPOOFING RISK]"
+        )
+        st.warning(
+            "Action Taken: Audio Pipeline Hard-Disconnected at Layer 1"
+            " (Acoustic Anomaly)."
+        )
+      else:
+        st.success(
+            "Real Human Voice Signature Verified. Confidence:"
+            f" {(1.0 - spoof_probability) * 100:.1f}%"
+        )
 
     except Exception as e:
       st.error(f"Error processing audio payload: {e}")
