@@ -3,6 +3,9 @@ import streamlit as st
 from pathlib import Path
 from dotenv import load_dotenv
 import joblib
+import librosa
+import numpy as np
+import soundfile as sf
 
 # Streamlit page configuration
 st.set_page_config(
@@ -29,9 +32,28 @@ def load_acoustic_model():
     artifact = joblib.load(model_path)
     return artifact["model"], artifact["scaler"]
 
+svm_model, scaler = load_acoustic_model()
+
 # Real ML inference functions
-def run_real_acoustic_inference():
-   pass
+def run_real_acoustic_inference(y, sr):
+    """Extracts 26 MFCC features from audio signal and predicts using trained SVM"""
+    # Extract 13 MFCCs
+    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+    mfccs_mean = np.mean(mfccs.T, axis=0)
+    mfccs_std = np.std(mfccs.T, axis=0)
+
+    # Combine into 26-dimensional vector
+    feature_vector = np.hstack([mfccs_mean, mfccs_std])
+
+    # Scale and then predict w/ SVM
+    features_scaled = scaler.transform([feature_vector])
+    prediction = svm_model.predict(features_scaled)[0]  # 0 = Human, 1 = AI
+    probabilities = svm_model.predict_proba(features_scaled)[0]
+
+    spoof_prob = (
+        probabilities[1] if prediction == 1 else (1.0 - probabilities[0])
+    )
+    return int(prediction), float(spoof_prob)
 
 
 
