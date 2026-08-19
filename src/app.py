@@ -1,7 +1,12 @@
 import io
+import os
 import json
 import streamlit as st
 from pathlib import Path
+import datetime
+import time
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 import joblib
 import librosa
@@ -27,6 +32,17 @@ model_path = project_root / "models" / "voiceguard_svm.pkl"
 # Initialize OpenAI Client
 client = OpenAI()
 
+# AWS DynamoDB Client Initialization
+try:
+  dynamodb = boto3.resource(
+      "dynamodb",
+      region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"),
+      aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+      aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+  )
+  dynamo_table = dynamodb.Table("VoiceGuard_SecurityLogs")
+except Exception:
+  dynamo_table = None
 
 # Load trained ML model (cached in memory)
 @st.cache_resource
@@ -103,6 +119,17 @@ def run_real_semantic_analysis(audio_bytes):
 
     return transcript, json.loads(gpt_res.choices[0].message.content)
 
+# AWS DynamoDB Audit Logger
+def log_event_to_dynamodb(log_data):
+    """Pushes real-time security events to Amazon DynamoDB NoSQL Table."""
+    if dynamo_table:
+        try:
+            dynamo_table.put_item(Item=log_data)
+            return True
+        except (BotoCoreError, ClientError) as e:
+            print(f"AWS DynamoDB Error: {e}")
+        return False
+    return False
 
 # User Interface
 st.title("🛡️ VoiceGuard - AI Acoustic Security")
@@ -249,6 +276,38 @@ if audio_to_process is not None:
                 )
             else:
                 st.info("✅ Semantic Intent: Safe (Standard Inquiry)")
+
+            st.divider()
+
+            # Audit Payload & DynamoDB Sync
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_id = f"incident_{int(time.time())}"
+
+            log_payload = {
+                "IncidentID": log_id,
+                "Timestamp": timestamp,
+                "Source": source_name,
+                "Transcript": real_transcript,
+                "Acoustic_Prediction": (
+                    "SYNTHETIC_AI" if is_ai_prediction == 1 else "HUMAN_ORGANIC"
+                ),
+                "Spoof_Probability": f"{spoof_probability:.2f}",
+                "Semantic_Risk": "HIGH" if is_malicious_intent else "LOW",
+                "Status": (
+                    "BLOCKED"
+                    if (is_ai_prediction == 1 or is_malicious_intent)
+                    else "PASSED"
+                ),
+            }
+
+            aws_logged = log_event_to_dynamodb(log_payload)
+
+            with st.expander("📦 AWS DynamoDB Telemetry Audit Payload", expanded=True):
+                if aws_logged:
+                    st.caption("🟢 Live Event Persisted to Amazon DynamoDB")
+                else:
+                    st.caption("⚪ Local Mode (AWS DynamoDB Log Prepared)")
+                    st.json(log_payload)
 
         except Exception as e:
             st.error(f"Error processing audio payload: {e}")
